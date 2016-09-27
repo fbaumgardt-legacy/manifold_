@@ -8,8 +8,8 @@ import play.modules.reactivemongo.json._
 case class URN(namespace:String="",domain:String="",textgroup:String="",work:String="",edition:String="",passage:String="",sentence:String="")
 
 object URN {
-  val sentence = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)\\.([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)".r
-  val passage = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)\\.([^:^\\.]+):([^:^\\.]+)".r
+  val sentence = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)\\.([^:^\\.]+):([^:]+):([^:]+)".r
+  val passage = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)\\.([^:^\\.]+):([^:]+)".r
   val edition = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)\\.([^:^\\.]+)".r
   val work = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)\\.([^:^\\.]+)".r
   val textgroup = "urn:([^:^\\.]+):([^:^\\.]+):([^:^\\.]+)".r
@@ -27,11 +27,13 @@ object URN {
     case _ => new URN("")
   }
 
-  implicit def pathBinder() = new PathBindable[models.URN] {
+  implicit def urnPathBindable(implicit stringBinder:PathBindable[String]):PathBindable[models.URN] = new PathBindable[models.URN] {
 
-    override def bind(key:String, value:String):URN = URN.apply(value)
+    override def bind(key:String, value:String):Either[String,models.URN] = for {
+      id <- stringBinder.bind(key, value).right
+    } yield models.URN(value)
 
-    override def unbind(key: String, value: URN): String = value match {
+    override def unbind(key: String, value: models.URN): String = value match {
       case URN(ns,"","","","","","") => "urn:"+ns
       case URN(ns,dm,"","","","","") => "urn:"+ns+":"+dm
       case URN(ns,dm,tg,"","","","") => "urn:"+ns+":"+dm+":"+tg
